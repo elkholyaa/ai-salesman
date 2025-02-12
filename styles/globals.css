@@ -1,0 +1,11 @@
+/* 
+ * File: styles/globals.css
+ * Purpose: Global styles for the AI Salesman PoC.
+ * Role: Import Tailwind's base, components, and utilities to style the entire application.
+ * Workflow: This file is imported in pages/_app.tsx to apply global CSS across all pages.
+ */
+
+ @tailwind base;
+ @tailwind components;
+ @tailwind utilities;
+ 

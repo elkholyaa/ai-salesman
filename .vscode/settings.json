@@ -1,0 +1,11 @@
+{
+    // Disable built-in CSS and SCSS validation to avoid errors on Tailwind at-rules.
+    "css.validate": false,
+    "scss.validate": false,
+  
+    // Associate .css files with PostCSS so that Tailwind's syntax is recognized.
+    "files.associations": {
+      "*.css": "postcss"
+    }
+  }
+  
