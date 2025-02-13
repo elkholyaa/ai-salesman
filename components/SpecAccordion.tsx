@@ -7,7 +7,8 @@
  *       chatbot insights. The technical details remain permanently visible, while the AI explanation (and subsequent user interactions)
  *       are shown/hidden using an accordion-style toggle.
  * Overview: Upon toggling the explanation, an API call is made to fetch a simulated chatbot response. The component also allows
- *           the user to submit a custom question, for which a simulated answer is displayed.
+ *           the user to submit a custom question, for which a simulated answer is displayed. Additionally, when a suggested action is selected,
+ *           a new API call is made to fetch an explanation tailored to that action.
  * Integration: Import and use this component in pages/mobile-details.tsx to render each technical spec with an expandable AI explanation.
  */
 
@@ -30,15 +31,19 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
   const [customResponse, setCustomResponse] = useState<string>('');
 
   // Function to fetch the AI explanation from the API.
-  const fetchChatbotExplanation = async () => {
+  // If an action is provided, the message is tailored to include that action.
+  const fetchChatbotExplanation = async (action?: string) => {
     setLoading(true);
     try {
+      const message = action
+        ? `Provide a ${action.toLowerCase()} explanation for the ${title} specification.`
+        : `Explain the ${title} specification.`;
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ message: `Explain the ${title} specification.` })
+        body: JSON.stringify({ message })
       });
       const data = await res.json();
       setChatbotResponse(data.response);
@@ -88,6 +93,12 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     }
   };
 
+  // Handle a suggested action click by triggering a new API call with the action context.
+  const handleSuggestedAction = async (action: string) => {
+    setCustomResponse(''); // Clear any custom response.
+    await fetchChatbotExplanation(action);
+  };
+
   return (
     <div className="border rounded-md my-2 p-4">
       {/* Always display the technical specification details */}
@@ -117,7 +128,7 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
               <button
                 key={idx}
                 className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none"
-                onClick={() => console.log(`Action selected: ${action}`)}
+                onClick={() => handleSuggestedAction(action)}
               >
                 {action}
               </button>
