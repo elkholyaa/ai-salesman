@@ -1,85 +1,76 @@
 /**
  * File: components/SpecAccordion.tsx
- * Purpose: Provide an interactive component that displays the technical specification details (always visible)
- *          and toggles the display of a dynamic AI chatbot explanation (fetched via an API) along with suggested follow-up actions,
- *          as well as handling custom question submissions.
- * Role: This component is used on the Mobile Phone Details Page to enrich each technical specification with additional
- *       chatbot insights. The technical details remain permanently visible, while the AI explanation (and subsequent user interactions)
- *       are shown/hidden using an accordion-style toggle.
- * Overview: Upon toggling the explanation, an API call is made to fetch a simulated chatbot response. The component also allows
- *           the user to submit a custom question, for which a simulated answer is displayed. Additionally, when a suggested action is selected,
- *           a new API call is made to fetch an explanation tailored to that action.
- * Integration: Import and use this component in pages/mobile-details.tsx to render each technical spec with an expandable AI explanation.
+ * Purpose: Provide an interactive component to display technical specification details and toggle an AI explanation.
+ * Role: Used on the Mobile Phone Details Page to enrich each spec with a concise, well-formatted AI explanation.
+ * Overview: When toggled, this component calls the API with a refined prompt that instructs the AI to return exactly 
+ *           four bullet points in Markdown format. Each bullet point must be in the format:
+ *
+ *             - **Key Term**: Explanation
+ *
+ *           Each bullet must be on its own line with one blank line between bullets, and the total response is limited to 60 words.
  */
 
 import React, { useState, useEffect, KeyboardEvent } from 'react';
 
-// Define the props interface for the SpecAccordion component.
 interface SpecAccordionProps {
-  title: string;       // The title of the specification (e.g., "Display", "Processor")
-  specDetails: string; // The technical details of the specification, which are always visible.
+  title: string;
+  specDetails: string;
 }
 
 const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => {
-  // State to manage whether the AI explanation and suggested actions are visible.
   const [showExplanation, setShowExplanation] = useState(false);
-  // State to store the chatbot response fetched from the API.
   const [chatbotResponse, setChatbotResponse] = useState<string>('');
-  // Loading state for API call.
   const [loading, setLoading] = useState<boolean>(false);
-  // State to store the simulated response for custom user questions.
   const [customResponse, setCustomResponse] = useState<string>('');
 
-  // Function to fetch the AI explanation from the API.
-  // If an action is provided, the message is tailored to include that action.
+  /**
+   * Fetch a technical explanation from the API.
+   * The prompt instructs the AI to return exactly 4 bullet points in Markdown format.
+   * Format: "- **Key Term**: Explanation" with each bullet on its own line and a blank line between.
+   * Total response must be within 60 words.
+   */
   const fetchChatbotExplanation = async (action?: string) => {
     setLoading(true);
     try {
-      const message = action
-        ? `Provide a ${action.toLowerCase()} explanation for the ${title} specification.`
-        : `Explain the ${title} specification.`;
+      const prompt = action
+        ? `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`
+        : `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`;
+      
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: prompt })
       });
       const data = await res.json();
       setChatbotResponse(data.response);
     } catch (error) {
+      console.error("Error fetching chatbot explanation:", error);
       setChatbotResponse('Error fetching AI explanation.');
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // useEffect to trigger the API call when the explanation is toggled on and no response is yet stored.
   useEffect(() => {
     if (showExplanation && !chatbotResponse) {
       fetchChatbotExplanation();
     }
   }, [showExplanation]);
 
-  // Simulated function to generate a response for a custom user question.
   const simulateCustomResponse = (question: string): string => {
     return `Simulated answer for your question: "${question}"`;
   };
 
-  // Hardcoded suggested actions.
   const suggestedActions = [
     "More Details",
     "Simplified Explanation",
     "Comparison with other tech",
   ];
 
-  // Toggle the visibility of the AI explanation section.
   const toggleExplanation = () => {
     setShowExplanation(!showExplanation);
   };
 
-  // Handle custom question submission on Enter key.
   const handleCustomQuestionKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -93,20 +84,17 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     }
   };
 
-  // Handle a suggested action click by triggering a new API call with the action context.
   const handleSuggestedAction = async (action: string) => {
-    setCustomResponse(''); // Clear any custom response.
+    setCustomResponse('');
     await fetchChatbotExplanation(action);
   };
 
   return (
     <div className="border rounded-md my-2 p-4">
-      {/* Always display the technical specification details */}
       <div>
         <h3 className="text-xl font-bold">{title}</h3>
         <p className="text-gray-700">{specDetails}</p>
       </div>
-      {/* Button to toggle the AI explanation */}
       <div className="mt-2">
         <button
           onClick={toggleExplanation}
@@ -115,13 +103,18 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
           {showExplanation ? "Hide 🤖 AI Explanation" : "Show 🤖 AI Explanation"}
         </button>
       </div>
-      {/* Conditionally render the AI explanation, suggested actions, and custom question input */}
       {showExplanation && (
-        <div className="mt-4 p-4 border rounded bg-gray-50">
+        <div className="mt-4 p-4 border rounded bg-gray-50 transition-all duration-300">
           {loading ? (
-            <p className="mb-2">Loading explanation...</p>
+            <div className="flex items-center space-x-2">
+              <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <p>Loading explanation...</p>
+            </div>
           ) : (
-            <p className="mb-2">{chatbotResponse}</p>
+            <pre className="mb-2 whitespace-pre-wrap">{chatbotResponse}</pre>
           )}
           <div className="flex space-x-2">
             {suggestedActions.map((action, idx) => (
