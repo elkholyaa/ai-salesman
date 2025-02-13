@@ -2,14 +2,12 @@
  * File: components/ChatInterface.tsx
  * Purpose: Render the interactive chat interface.
  * Role: Displays conversation history, handles user input, and simulates bot responses.
- * Workflow: 
- *   - Uses the custom hook `useConversation` to manage chat state.
- *   - Renders a chat window showing the conversation.
- *   - Handles form submission to add a user message and simulate a bot reply.
- * Integration: Receives demo-specific configuration (title, themeColor, defaultContext) via props to style the interface and provide context.
+ * Integration: Uses the useConversation hook and demo configuration props.
+ * 
+ * Note: The "defaultContext" prop is now used to display an initial bot message.
  */
 
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { useConversation } from '../hooks/useConversation';
 import { ChatMessage } from '../types/chat';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,18 +22,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ title, themeColor, defaul
   const { messages, addMessage } = useConversation();
   const [input, setInput] = useState('');
 
-  // This function simulates a bot response by echoing the user's message.
-  // In a full implementation, this could be replaced with an API call to OpenAI.
+  // Simulate bot response by echoing the user's message.
   const simulateBotResponse = (userMessage: string) => {
     return `Echo: ${userMessage}`;
   };
 
-  // Handles form submission when the user sends a message.
+  // On initial mount, add the default context as a bot message if no messages exist.
+  useEffect(() => {
+    if (messages.length === 0 && defaultContext) {
+      const initialMessage: ChatMessage = {
+        id: uuidv4(),
+        content: defaultContext,
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      addMessage(initialMessage);
+    }
+    // We intentionally run this effect only once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Handle sending a message.
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return; // Prevent empty messages
+    if (!input.trim()) return;
 
-    // Create a chat message object for the user's message.
     const userMessage: ChatMessage = {
       id: uuidv4(),
       content: input,
@@ -43,10 +54,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ title, themeColor, defaul
       timestamp: new Date(),
     };
 
-    // Add the user's message to the conversation.
     addMessage(userMessage);
 
-    // Create a bot message object with a simulated response.
     const botMessage: ChatMessage = {
       id: uuidv4(),
       content: simulateBotResponse(input),
@@ -54,22 +63,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ title, themeColor, defaul
       timestamp: new Date(),
     };
 
-    // Simulate a delay for the bot response to mimic real-world API behavior.
-    setTimeout(() => {
-      addMessage(botMessage);
-    }, 500);
-
-    // Clear the input field after sending the message.
+    // Simulate delay for bot response.
+    setTimeout(() => addMessage(botMessage), 500);
     setInput('');
   };
 
   return (
     <div className="max-w-xl mx-auto p-4">
-      {/* Display the chat title using the provided theme color */}
       <h1 style={{ color: themeColor }} className="text-2xl font-bold mb-4">
         {title}
       </h1>
-      {/* Chat window displaying the conversation history */}
       <div className="border rounded-lg p-4 h-96 overflow-y-auto bg-gray-50">
         {messages.map((msg) => (
           <div
@@ -83,7 +86,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ title, themeColor, defaul
           </div>
         ))}
       </div>
-      {/* Form for user input */}
       <form onSubmit={handleSubmit} className="mt-4 flex">
         <input
           type="text"

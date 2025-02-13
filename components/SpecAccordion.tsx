@@ -1,4 +1,12 @@
-import React, { useState, useEffect, KeyboardEvent } from 'react';
+/**
+ * File: components/SpecAccordion.tsx
+ * Purpose: Provide an interactive component to display technical specification details and toggle an AI explanation.
+ * Role: Used on the Mobile Phone Details Page to enrich each spec with a concise, well-formatted AI explanation.
+ * Workflow: When toggled, this component calls the API with a refined prompt that instructs the AI to return exactly 
+ *           four bullet points in Markdown format. Each bullet must be on its own line with one blank line between.
+ */
+
+import React, { useState, useEffect, KeyboardEvent, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 interface SpecAccordionProps {
@@ -12,10 +20,18 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
   const [loading, setLoading] = useState<boolean>(false);
   const [customResponse, setCustomResponse] = useState<string>('');
 
-  const fetchChatbotExplanation = async (action?: string) => {
+  /**
+   * Fetch a technical explanation from the API.
+   * If an action is provided, include it in the prompt for a tailored explanation.
+   * Returns exactly 4 bullet points in Markdown format with a total response within 60 words.
+   */
+  const fetchChatbotExplanation = useCallback(async (action?: string) => {
     setLoading(true);
     try {
-      const prompt = `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`;
+      const prompt = action
+        ? `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Give a ${action.toLowerCase()} explanation. Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`
+        : `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`;
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -29,14 +45,16 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     } finally {
       setLoading(false);
     }
-  };
+  }, [title, specDetails]);
 
+  // Fetch explanation on expansion if not already fetched.
   useEffect(() => {
     if (showExplanation && !chatbotResponse) {
       fetchChatbotExplanation();
     }
-  }, [showExplanation]);
+  }, [showExplanation, chatbotResponse, fetchChatbotExplanation]);
 
+  // Simulate a custom response for user-typed questions.
   const simulateCustomResponse = (question: string): string => {
     return `Simulated answer for your question: "${question}"`;
   };
@@ -51,6 +69,7 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     setShowExplanation(!showExplanation);
   };
 
+  // Handle custom question submission via Enter key.
   const handleCustomQuestionKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -64,6 +83,7 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     }
   };
 
+  // Handle suggested action clicks by refetching explanation with the action parameter.
   const handleSuggestedAction = async (action: string) => {
     setCustomResponse('');
     await fetchChatbotExplanation(action);
@@ -94,7 +114,6 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
               <p>Loading explanation...</p>
             </div>
           ) : (
-            // Use ReactMarkdown to render the Markdown formatted response.
             <ReactMarkdown className="mb-2">{chatbotResponse}</ReactMarkdown>
           )}
           <div className="flex space-x-2">
