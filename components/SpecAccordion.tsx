@@ -1,16 +1,5 @@
-/**
- * File: components/SpecAccordion.tsx
- * Purpose: Provide an interactive component to display technical specification details and toggle an AI explanation.
- * Role: Used on the Mobile Phone Details Page to enrich each spec with a concise, well-formatted AI explanation.
- * Overview: When toggled, this component calls the API with a refined prompt that instructs the AI to return exactly 
- *           four bullet points in Markdown format. Each bullet point must be in the format:
- *
- *             - **Key Term**: Explanation
- *
- *           Each bullet must be on its own line with one blank line between bullets, and the total response is limited to 60 words.
- */
-
 import React, { useState, useEffect, KeyboardEvent } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface SpecAccordionProps {
   title: string;
@@ -23,19 +12,10 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
   const [loading, setLoading] = useState<boolean>(false);
   const [customResponse, setCustomResponse] = useState<string>('');
 
-  /**
-   * Fetch a technical explanation from the API.
-   * The prompt instructs the AI to return exactly 4 bullet points in Markdown format.
-   * Format: "- **Key Term**: Explanation" with each bullet on its own line and a blank line between.
-   * Total response must be within 60 words.
-   */
   const fetchChatbotExplanation = async (action?: string) => {
     setLoading(true);
     try {
-      const prompt = action
-        ? `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`
-        : `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`;
-      
+      const prompt = `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`;
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,7 +94,8 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
               <p>Loading explanation...</p>
             </div>
           ) : (
-            <pre className="mb-2 whitespace-pre-wrap">{chatbotResponse}</pre>
+            // Use ReactMarkdown to render the Markdown formatted response.
+            <ReactMarkdown className="mb-2">{chatbotResponse}</ReactMarkdown>
           )}
           <div className="flex space-x-2">
             {suggestedActions.map((action, idx) => (
