@@ -1,9 +1,11 @@
 /**
  * File: components/SpecAccordion.tsx
  * Purpose: Provide an interactive component to display technical specification details and toggle an AI explanation.
- * Role: Used on the Mobile Phone Details Page to enrich each spec with a concise, well-formatted AI explanation.
- * Workflow: When toggled, this component calls the API with a refined prompt that instructs the AI to return exactly 
- *           four bullet points in Markdown format. Each bullet must be on its own line with one blank line between.
+ * Role: Used on the Mobile Phone Details Page to enrich each spec with a concise, conversational AI explanation.
+ * Workflow: When toggled, this component calls the API with a prompt that instructs the AI (as a friendly mobile store salesperson)
+ *           to explain the spec in simple, shopper-friendly language that highlights real-world benefits. The response must be
+ *           returned strictly as numbered bullet points in Markdown (without any extra introductory or concluding text). 
+ *           In the bullet points, the AI should use the key feature directly (e.g. "octa-core: ...") rather than restating the spec title.
  */
 
 import React, { useState, useEffect, KeyboardEvent, useCallback } from 'react';
@@ -22,16 +24,22 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
 
   /**
    * Fetch a technical explanation from the API.
-   * If an action is provided, include it in the prompt for a tailored explanation.
-   * Returns exactly 4 bullet points in Markdown format with a total response within 60 words.
+   * Uses a persona prompt for a conversational, shopper-friendly explanation.
+   * The explanation should focus on how the feature benefits the user without restating obvious context.
+   * Return only numbered bullet points in Markdown format, with each bullet starting with the key feature (e.g. "octa-core: ...").
+   * Ensure that each bullet is a complete sentence that fully conveys the benefit without being truncated.
    */
   const fetchChatbotExplanation = useCallback(async (action?: string) => {
     setLoading(true);
     try {
-      const prompt = action
-        ? `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Give a ${action.toLowerCase()} explanation. Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`
-        : `Provide a technical explanation for the ${title} spec using these details: "${specDetails}". Return exactly 4 bullet points in Markdown format, each bullet on its own line with a blank line in between. Format: "- **Key Term**: Explanation". Limit the total response to 60 words.`;
-
+      const persona = "You are a friendly and knowledgeable mobile store salesperson with deep technical insights. A customer has asked you to explain a specific technical term related to a phone's specifications. Your explanation should focus on how the feature benefits the user in everyday life using relatable examples, and avoid trivial or obvious definitions.";
+      const specInstruction = ` Explain the following spec: ${title} - "${specDetails}".`;
+      const additionalInstruction = action 
+        ? ` Also, provide a ${action.toLowerCase()} explanation.` 
+        : "";
+      const bulletInstruction = " Return only numbered bullet points in Markdown format, with each bullet on its own line and one blank line between bullets. Each bullet must be formatted exactly as: '1. **Key Feature**: Explanation.' Ensure that each bullet is a complete sentence that fully conveys the benefit without being truncated. Focus on using the key feature directly (e.g. 'octa-core: ...') without restating the spec title. Do not include any additional text.";
+      const prompt = persona + specInstruction + additionalInstruction + bulletInstruction;
+      
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,7 +55,7 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     }
   }, [title, specDetails]);
 
-  // Fetch explanation on expansion if not already fetched.
+  // Fetch explanation when the accordion is expanded and no response is loaded yet.
   useEffect(() => {
     if (showExplanation && !chatbotResponse) {
       fetchChatbotExplanation();
@@ -100,18 +108,26 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
           onClick={toggleExplanation}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none"
         >
-          {showExplanation ? "Hide 🤖 AI Explanation" : "Show 🤖 AI Explanation"}
+          {showExplanation ? (
+            <>
+              Hide <span className="inline-block animate-pulse">💡</span> AI Insight
+            </>
+          ) : (
+            <>
+              Show <span className="inline-block animate-pulse">💡</span> AI Insight
+            </>
+          )}
         </button>
       </div>
       {showExplanation && (
         <div className="mt-4 p-4 border rounded bg-gray-50 transition-all duration-300">
           {loading ? (
             <div className="flex items-center space-x-2">
-              <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <p>Loading explanation...</p>
+              <span className="text-3xl">
+                <span className="inline-block">👤</span>
+                <span className="inline-block ml-1 animate-rotate">⚙️</span>
+              </span>
+              <p>Our brilliant AI is processing your request...</p>
             </div>
           ) : (
             <ReactMarkdown className="mb-2">{chatbotResponse}</ReactMarkdown>
@@ -142,6 +158,15 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
           )}
         </div>
       )}
+      <style jsx>{`
+        @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-rotate {
+          animation: rotate 3s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
