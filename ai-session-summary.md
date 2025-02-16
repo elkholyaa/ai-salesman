@@ -190,3 +190,51 @@ Refine the AI-generated explanation so that it returns a clear, concise, and wel
 ---
 
 Feel free to share this summary with your AI coding assistant to ensure continuity in our work. Let me know if you need further details or adjustments!
+
+
+====================================================
+
+### Session Summary – 2025-02-13 21:00 UTC
+
+**Project Context:**  
+We are working on the AI Salesman PoC, a Next.js-based application that includes a SpecAccordion component. This component displays mobile phone technical specifications and, when expanded, calls an AI-powered API to generate shopper-friendly explanations. The AI response must be formatted exclusively as a numbered bullet list in Markdown, with each bullet being a complete sentence ending with a period.
+
+**Issues Addressed:**  
+
+1. **Truncated AI Responses:**  
+   - The AI was producing incomplete bullet points (e.g., "Vibrant Colors: The display’s ability to…").  
+   - The objective is to refine the prompt so that the AI returns complete, non-truncated bullet points, with each bullet being a full sentence that ends with a period and without trailing conjunctions.
+
+2. **Output Formatting:**  
+   - The output should be exclusively a numbered list in Markdown format, strictly following the format (e.g., "1. **Key Feature**: Explanation.").  
+   - No extra introductory or concluding text should be included in the AI response.
+
+3. **Loading Indicator and UI Tweaks:**  
+   - Previous iterations used various emoji and animations. The final design aims to have an AI-themed loading indicator that visually suggests “a head with gears turning.”  
+   - The chosen design uses a human head emoji (👤) with an adjacent gear emoji (⚙️) that rotates slowly (3-second cycle), implying thoughtful processing.  
+   - The toggle button is designed to display "Show 💡 AI Insight" when hidden and "Hide 💡 AI Insight" when visible, with the lightbulb gently pulsing.
+
+**Key Changes in SpecAccordion.tsx:**  
+
+- **Prompt Revision:**  
+  - The prompt now explicitly instructs the AI to return its answer solely as a numbered Markdown list.  
+  - Each bullet must be a complete sentence ending with a period, ensuring that no bullet is truncated (for example, no bullet should end with "while," "and," or "or").  
+  - The prompt also instructs the AI to focus on the key feature directly (e.g., "octa-core: ...") without redundantly restating the spec title.
+
+- **Animated Loading Indicator:**  
+  - The loading indicator now displays a human head (👤) alongside a rotating gear (⚙️) using a CSS keyframe animation that rotates the gear on a 3-second cycle.  
+  - This design is intended to evoke the imagery of "gears turning in a head," suggesting that the AI is actively processing the request.
+
+- **Toggle Button Improvement:**  
+  - The toggle button now uses a pulsating lightbulb emoji (💡) to indicate AI insight, with text toggling between "Show 💡 AI Insight" and "Hide 💡 AI Insight."
+
+**Outstanding Concerns:**  
+- Despite these improvements, there are still issues with the AI response occasionally being truncated or not strictly adhering to the desired bullet format.  
+- Further refinements to the prompt may be needed if the AI continues to produce incomplete bullet points.
+
+**Next Steps:**  
+- **Testing:** Deploy the current changes and monitor the AI output for complete, correctly formatted bullet points.  
+- **Further Refinement:** If truncation issues persist, further adjust the prompt instructions to enforce complete sentence structure.  
+- **Commit & Deploy:** Once the desired behavior is consistently achieved, commit and push the changes to proceed with deployment on Vercel.
+
+This summary provides a detailed account of our recent discussion and the adjustments made, along with next steps. Let me know if any additional details or modifications are needed!
