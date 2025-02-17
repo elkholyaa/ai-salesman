@@ -1,13 +1,3 @@
-/**
- * File: components/SpecAccordion.tsx
- * Purpose: Provide an interactive component to display technical specification details and toggle an AI explanation.
- * Role: Used on the Mobile Phone Details Page to enrich each spec with a concise, conversational AI explanation.
- * Workflow: When toggled, this component calls the API with a prompt that instructs the AI (as a friendly mobile store salesperson)
- *           to explain the spec in simple, shopper-friendly language that highlights real-world benefits. The response must be
- *           returned strictly as numbered bullet points in Markdown (without any extra introductory or concluding text). 
- *           In the bullet points, the AI should use the key feature directly (e.g. "octa-core: ...") rather than restating the spec title.
- */
-
 import React, { useState, useEffect, KeyboardEvent, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 
@@ -22,13 +12,6 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
   const [loading, setLoading] = useState<boolean>(false);
   const [customResponse, setCustomResponse] = useState<string>('');
 
-  /**
-   * Fetch a technical explanation from the API.
-   * Uses a persona prompt for a conversational, shopper-friendly explanation.
-   * The explanation should focus on how the feature benefits the user without restating obvious context.
-   * Return only numbered bullet points in Markdown format, with each bullet starting with the key feature (e.g. "octa-core: ...").
-   * Ensure that each bullet is a complete sentence that fully conveys the benefit without being truncated.
-   */
   const fetchChatbotExplanation = useCallback(async (action?: string) => {
     setLoading(true);
     try {
@@ -55,14 +38,12 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     }
   }, [title, specDetails]);
 
-  // Fetch explanation when the accordion is expanded and no response is loaded yet.
   useEffect(() => {
     if (showExplanation && !chatbotResponse) {
       fetchChatbotExplanation();
     }
   }, [showExplanation, chatbotResponse, fetchChatbotExplanation]);
 
-  // Simulate a custom response for user-typed questions.
   const simulateCustomResponse = (question: string): string => {
     return `Simulated answer for your question: "${question}"`;
   };
@@ -77,7 +58,6 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     setShowExplanation(!showExplanation);
   };
 
-  // Handle custom question submission via Enter key.
   const handleCustomQuestionKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -91,7 +71,6 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
     }
   };
 
-  // Handle suggested action clicks by refetching explanation with the action parameter.
   const handleSuggestedAction = async (action: string) => {
     setCustomResponse('');
     await fetchChatbotExplanation(action);
@@ -106,17 +85,9 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
       <div className="mt-2">
         <button
           onClick={toggleExplanation}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none"
+          className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-400 text-white rounded hover:from-green-600 hover:to-green-500 focus:outline-none"
         >
-          {showExplanation ? (
-            <>
-              Hide <span className="inline-block animate-pulse">💡</span> AI Insight
-            </>
-          ) : (
-            <>
-              Show <span className="inline-block animate-pulse">💡</span> AI Insight
-            </>
-          )}
+          <span className="inline-block animate-sparkle">✨</span> Ask Our AI Expert
         </button>
       </div>
       {showExplanation && (
@@ -165,6 +136,16 @@ const SpecAccordion: React.FC<SpecAccordionProps> = ({ title, specDetails }) => 
         }
         .animate-rotate {
           animation: rotate 3s linear infinite;
+        }
+        @keyframes sparkle {
+          0% { transform: scale(1) rotate(0deg); opacity: 1; }
+          25% { transform: scale(1.5) rotate(15deg); opacity: 0.7; }
+          50% { transform: scale(1.3) rotate(-15deg); opacity: 1; }
+          75% { transform: scale(1.5) rotate(10deg); opacity: 0.7; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .animate-sparkle {
+          animation: sparkle 1.5s infinite ease-in-out;
         }
       `}</style>
     </div>
