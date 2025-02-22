@@ -1,38 +1,39 @@
 /**
  * File: pages/mobile-details.tsx
  * Purpose: Render a comprehensive product detail page for the Samsung Galaxy S24 Ultra – 256GB AI Smartphone.
- * Role: This page emulates an e-commerce product detail layout, featuring the product image aligned to the top-left,
- *       with product details, pricing, reviews, and technical specifications displayed to the right. It integrates
- *       AI functionality for generating dynamic explanations for each specification.
- * Integration: Utilizes the SpecAccordion component for expandable technical details, Next.js Image for optimized
- *              image rendering, and Tailwind CSS for styling.
- *
- * Educational Comments:
- * - The layout employs a two-column flexbox design to position the image and product details side by side.
- * - E-commerce elements such as ratings, pricing with discounts, and action buttons are included to enhance user engagement.
- * - The SpecAccordion component is used to provide interactive, AI-generated explanations for technical specifications.
- * - Tailwind CSS utility classes are used for responsive and consistent styling.
+ * Role: This page displays product details including an image, pricing, reviews, and technical specifications.
+ *        The technical specifications are rendered using the TechnicalSpecsList component, which provides an interactive
+ *        numbered list with an animated emoji trigger for AI explanations.
+ * Integration: Replaces the previous SpecAccordion UI with TechnicalSpecsList to align with the new chatbot branch requirements.
+ *              When a specification is selected via the emoji, the global ChatbotContext is updated to trigger the chatbot.
+ * Workflow: The product details are shown in a two-column layout, with the technical specifications list displayed below.
+ *           Clicking the emoji in the specs list sets the selected spec in ChatbotContext, causing the Chatbot component
+ *           to open and send an explanation request.
  */
 
-import React from 'react';
-import SpecAccordion from '../components/SpecAccordion';
+import React, { useContext } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import TechnicalSpecsList, { TechSpec } from '../components/TechnicalSpecsList';
+import { ChatbotContext } from '../context/ChatbotContext';
 
 const MobileDetailsPage: React.FC = () => {
-  // Product information for Samsung Galaxy S24 Ultra
+  // Access the setSelectedSpec function from the global ChatbotContext.
+  const { setSelectedSpec } = useContext(ChatbotContext);
+
+  // Product information for Samsung Galaxy S24 Ultra.
   const product = {
     name: 'Samsung Galaxy S24 Ultra - 256GB AI Smartphone',
     currentPrice: 1299.99,
     originalPrice: 1499.99,
-    discount: 13, // Discount percentage
+    discount: 13, // Discount percentage.
     rating: 4.8,
-    reviews: 152, // Number of reviews
-    image: '/samsung-s24-ultra.jpg', // Image path in the public folder
+    reviews: 152, // Number of reviews.
+    image: '/samsung-s24-ultra.jpg', // Image path in the public folder.
   };
 
-  // Technical specifications for the SpecAccordion components
-  const mobileSpecs = [
+  // Technical specifications array adhering to the TechSpec interface.
+  const mobileSpecs: TechSpec[] = [
     {
       title: 'Display',
       specDetails:
@@ -79,7 +80,7 @@ const MobileDetailsPage: React.FC = () => {
             className="object-contain"
           />
         </div>
-        {/* Right Column: Product Details & Technical Specifications */}
+        {/* Right Column: Product Details */}
         <div className="md:w-2/3 mt-6 md:mt-0 md:pl-8">
           {/* Product Name */}
           <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
@@ -111,15 +112,24 @@ const MobileDetailsPage: React.FC = () => {
               Buy Now
             </button>
           </div>
-          {/* Technical Specifications Section */}
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Technical Specifications</h2>
-            {mobileSpecs.map((spec, index) => (
-              <SpecAccordion key={index} title={spec.title} specDetails={spec.specDetails} />
-            ))}
-          </div>
+          {/* Link to another page (if needed) */}
+          <Link
+            href="/"
+            className="text-blue-600 hover:underline"
+          >
+            Back to Home
+          </Link>
         </div>
       </div>
+
+      {/* Technical Specifications Section */}
+      <TechnicalSpecsList
+        specs={mobileSpecs}
+        onSpecSelect={(specIndex: number) => {
+          // Update the global ChatbotContext with the selected spec.
+          setSelectedSpec(mobileSpecs[specIndex]);
+        }}
+      />
     </div>
   );
 };
