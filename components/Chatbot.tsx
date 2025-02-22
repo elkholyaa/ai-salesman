@@ -1,15 +1,18 @@
 /**
  * File: components/Chatbot.tsx
- * Purpose: Main floating chatbot UI for the Chatbot Branch ("bot") with integrated spec explanation functionality.
+ * Purpose: Main floating chatbot UI for the Chatbot Branch ("bot") with integrated API calls for AI explanations.
  * Role: This component renders a floating chatbot window that can be toggled open/closed.
  *       It listens to the global ChatbotContext for any selected technical specification and, if present,
  *       automatically opens the chatbot and sends an explanation request for that spec.
+ *       It also integrates the ExplanationOptions component to allow interactive follow-up requests.
  * Integration: Uses the global ChatHistoryContext for conversation management and ChatbotContext for specification selection.
- *              It is rendered globally (via pages/_app.tsx) so that it appears on every page.
- * Workflow: When a user clicks an emoji (from TechnicalSpecsList), the selected spec is stored in ChatbotContext.
- *           This component's useEffect detects the change, opens the chatbot, adds a user message for the request,
- *           simulates an AI response, and then resets the selected spec.
- * Educational Comments: Integrating context in this way decouples UI from interaction logic, making maintenance and testing easier.
+ *              The useChat hook is used to send messages to the AI chatbot API endpoint, replacing simulated responses.
+ * Workflow: When a user clicks an emoji in the TechnicalSpecsList, the selected spec is stored in ChatbotContext.
+ *           The component detects this change, opens the chatbot, sends an explanation request via the API,
+ *           stores the spec context for later follow-ups, and resets the selected spec.
+ *           When a follow-up option is clicked, the stored spec context is used to provide additional details.
+ * Educational Comments: Introducing a dedicated state for the current spec context helps preserve detail for follow-up
+ *                       requests, ensuring the chatbot has sufficient context to generate a comprehensive response.
  */
 
 import React, { useState, FormEvent, useEffect, useContext } from 'react';
@@ -17,11 +20,13 @@ import { useConversation } from '../hooks/useConversation';
 import { ChatMessage } from '../types/chat';
 import { v4 as uuidv4 } from 'uuid';
 import { ChatbotContext } from '../context/ChatbotContext';
+import ExplanationOptions from '../components/ExplanationOptions';
+import { useChat } from '../hooks/useChat';
 
 const Chatbot: React.FC = () => {
   // Retrieve chat messages and update functions from the global conversation context.
   const { messages, addMessage, clearConversation } = useConversation();
-  
+
   // Local state for user input and controlling the chatbot window visibility.
   const [input, setInput] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -29,11 +34,11 @@ const Chatbot: React.FC = () => {
   // Retrieve the selected specification and its setter from the Chatbot context.
   const { selectedSpec, setSelectedSpec } = useContext(ChatbotContext);
 
-  // Function to simulate a bot response.
-  const simulateBotResponse = (userMessage: string): string => {
-    // For the POC, simply echo the user's message.
-    return `Echo: ${userMessage}`;
-  };
+  // New state to store the context of the currently explained spec.
+  const [currentSpecContext, setCurrentSpecContext] = useState('');
+
+  // Import sendMessage function and loading state from the useChat hook.
+  const { sendMessage } = useChat();
 
   // Toggle the chatbot window open/closed.
   const toggleChatbot = () => {
@@ -41,48 +46,46 @@ const Chatbot: React.FC = () => {
   };
 
   // Handle sending a new message from the input field.
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     // Create a chat message for the user.
-    const userMessage: ChatMessage = {
+    const userMsg: ChatMessage = {
       id: uuidv4(),
       content: input,
       sender: 'user',
       timestamp: new Date(),
     };
+    addMessage(userMsg);
 
-    // Add the user's message to the conversation.
-    addMessage(userMessage);
-
-    // Create a simulated bot response message.
-    const botMessage: ChatMessage = {
+    // Send the user's message to the AI chatbot API.
+    const response = await sendMessage(input);
+    const botMsg: ChatMessage = {
       id: uuidv4(),
-      content: simulateBotResponse(input),
+      content: response,
       sender: 'bot',
       timestamp: new Date(),
     };
-
-    // Simulate a slight delay before the bot responds.
-    setTimeout(() => {
-      addMessage(botMessage);
-    }, 500);
+    addMessage(botMsg);
 
     // Clear the input field.
     setInput('');
   };
 
   // Effect to listen for changes in the selected specification.
-  // When a spec is selected, automatically open the chatbot and submit an explanation request.
+  // When a spec is selected, automatically open the chatbot, send an explanation request,
+  // and store the spec context for follow-up requests.
   useEffect(() => {
     if (selectedSpec) {
       // Open the chatbot if not already open.
       if (!isOpen) {
         setIsOpen(true);
       }
-      // Create a message to ask for an explanation for the selected spec.
+      // Build the explanation request using the selected spec details.
       const request = `Explain ${selectedSpec.title}: ${selectedSpec.specDetails}`;
+      // Store the request string in currentSpecContext for future follow-up requests.
+      setCurrentSpecContext(request);
       const userMsg: ChatMessage = {
         id: uuidv4(),
         content: request,
@@ -91,22 +94,45 @@ const Chatbot: React.FC = () => {
       };
       addMessage(userMsg);
 
-      // Simulate a bot response for the explanation request.
-      const botMsg: ChatMessage = {
-        id: uuidv4(),
-        content: simulateBotResponse(request),
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setTimeout(() => {
+      // Use the useChat hook to send the explanation request to the API.
+      sendMessage(request).then(response => {
+        const botMsg: ChatMessage = {
+          id: uuidv4(),
+          content: response,
+          sender: 'bot',
+          timestamp: new Date(),
+        };
         addMessage(botMsg);
-      }, 500);
+      });
 
       // Reset the selected spec so this effect only runs once per selection.
       setSelectedSpec(null);
     }
-    // We include isOpen in the dependency array to ensure the window opens if needed.
-  }, [selectedSpec, isOpen, addMessage, setSelectedSpec]);
+  }, [selectedSpec, isOpen, addMessage, setSelectedSpec, sendMessage]);
+
+  // Callback to handle follow-up option selection.
+  const handleExplanationOption = async (option: string) => {
+    // If we have stored context, include it in the follow-up request.
+    const baseRequest = currentSpecContext || "the current spec";
+    const request = `Please provide a ${option} explanation for the following spec: ${baseRequest}`;
+    const userMsg: ChatMessage = {
+      id: uuidv4(),
+      content: request,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+    addMessage(userMsg);
+
+    // Send the follow-up request to the AI chatbot API.
+    const response = await sendMessage(request);
+    const botMsg: ChatMessage = {
+      id: uuidv4(),
+      content: response,
+      sender: 'bot',
+      timestamp: new Date(),
+    };
+    addMessage(botMsg);
+  };
 
   return (
     <>
@@ -162,6 +188,9 @@ const Chatbot: React.FC = () => {
               </button>
             </div>
           </form>
+
+          {/* Render ExplanationOptions for interactive follow-up requests */}
+          <ExplanationOptions onOptionSelect={handleExplanationOption} />
 
           {/* Option to clear chat history */}
           <div className="px-4 py-2">
