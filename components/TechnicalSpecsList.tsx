@@ -1,24 +1,21 @@
 /**
  * File: components/TechnicalSpecsList.tsx
- * Purpose: Render a numbered list of mobile technical specifications with an animated emoji trigger.
- * Role: This component displays each specification in a numbered list along with an animated emoji.
- *       When a user clicks or taps the emoji next to a specification, it triggers a callback (if provided)
- *       so that the chatbot can be activated to provide an AI-generated explanation.
- * Integration: The component is intended to be used on pages like Mobile Details. It receives the list of specs
- *              and a callback (onSpecSelect) that informs the parent component which spec was selected.
- * Educational Comments: Using a callback for spec selection decouples the UI display from the logic that handles
- *                       chatbot interaction, supporting easier maintenance and testing.
+ * Purpose: Render a numbered list of mobile technical specifications with an interactive hover/tap trigger.
+ * Role: This component displays each specification in a numbered list along with an animated emoji trigger provided by the HoverTrigger component.
+ *       When a user clicks or taps the trigger, it calls the provided onSpecSelect callback with the index of the selected spec.
+ * Integration: The component is intended for use in pages such as MobileDetailsPage to facilitate chatbot interactions based on technical specs.
+ * Workflow: The HoverTrigger component handles hover animations and tooltip display, decoupling interactive behavior from list rendering.
+ * Educational Comments: This update improves modularity and maintainability by reusing the HoverTrigger component instead of duplicating animation and tooltip logic inline.
  */
 
 import React from 'react';
+import HoverTrigger from './HoverTrigger';
 
-// Define the shape for a technical specification.
 export interface TechSpec {
   title: string;
   specDetails: string;
 }
 
-// Define props for the TechnicalSpecsList component.
 interface TechnicalSpecsListProps {
   specs: TechSpec[];
   /**
@@ -39,16 +36,13 @@ const TechnicalSpecsList: React.FC<TechnicalSpecsListProps> = ({ specs, onSpecSe
             <div className="flex-1">
               <strong>{spec.title}:</strong> {spec.specDetails}
             </div>
-            {/* Animated emoji trigger for chatbot explanation.
-                The 'animate-pulse' class provides a simple animation effect.
-                The onClick event calls the onSpecSelect callback with the index of the spec. */}
-            <button
-              onClick={() => onSpecSelect && onSpecSelect(index)}
-              className="ml-4 text-2xl focus:outline-none hover:scale-110 transform transition duration-200 animate-pulse"
-              title="Ask AI Sales for details"
-            >
-              🤖
-            </button>
+            {/* Use the HoverTrigger component for the interactive emoji */}
+            <div className="ml-4">
+              <HoverTrigger 
+                onClick={() => onSpecSelect && onSpecSelect(index)}
+                tooltip="Ask AI Sales for details"
+              />
+            </div>
           </li>
         ))}
       </ol>
